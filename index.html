@@ -128,6 +128,23 @@ button.code:active{transform:scale(.97)}
 .fbmsg.err{background:#fbecec;border:1px solid #efc2c2;color:#7a1f1f}
 .small{font-size:12.5px;color:var(--muted);margin-top:6px}
 @media (max-width:640px){.fb .row2{grid-template-columns:1fr}}
+/* Assuntos com contexto */
+.ctx{background:#fff;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:11px;padding:12px 14px;margin:14px 0 10px}
+.ctx .t{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700}
+.ctx .a{font-size:17px;font-weight:700;margin:2px 0 8px}
+.ctx .r{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:14px}
+.ctx .s{font-size:13px;color:var(--muted);margin-top:8px}
+details.grp{background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:6px}
+details.grp>summary{cursor:pointer;padding:9px 13px;font-weight:600;font-size:14.5px;list-style:none;display:flex;gap:8px;align-items:center}
+details.grp>summary::-webkit-details-marker{display:none}
+details.grp>summary:before{content:"▸";color:var(--muted);transition:transform .15s}
+details.grp[open]>summary:before{transform:rotate(90deg)}
+details.grp>summary .c{color:var(--muted);font-weight:400;font-size:13px}
+details.grp>summary .rm{margin-left:auto;color:var(--muted);font-weight:400;font-size:12px}
+.arow{display:flex;gap:8px;align-items:baseline;padding:6px 13px;border-top:1px solid #f0f2f5;flex-wrap:wrap}
+.arow .nm{font-size:14.5px}
+.arow .pt{font-size:12px;color:var(--muted);width:100%;padding-left:2px}
+.arow .code{font-size:13.5px;padding:1px 7px}
 footer{font-size:12.5px;color:var(--muted);padding:24px 0 10px;border-top:1px solid var(--line);margin-top:30px}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);opacity:0;
   background:#1b2430;color:#fff;padding:9px 16px;border-radius:9px;font-size:14px;transition:.18s;pointer-events:none;z-index:50}
@@ -227,7 +244,7 @@ mark{background:#ffe9a8;color:inherit;border-radius:3px;padding:0 1px}
         <li>Também dá para buscar pelo número da classe ou do assunto (ex.: <i>93</i>, <i>060503</i>, <i>7779</i>).</li>
         <li>Clique em qualquer código (classe ou assunto) para copiar e colar direto no sistema.</li>
         <li>Os códigos de assunto vêm com etiqueta: <b>EPROC</b> (azul) é o código para lançar no eproc; <b>CNJ</b> (roxo) é o código usado no DCP, PJe e SEEU.</li>
-        <li>Quando a ação diz “usar o assunto do crime/ato” ou “conforme o pedido”, clique em <i>Procurar assunto</i> para abrir a aba Assuntos.</li>
+        <li>Quando a ação diz “conforme o pedido” ou “usar o assunto do crime”, clique em <i>Escolher assunto</i>: abre a lista só com os assuntos que podem ser lançados naquela competência e sistema, com a classe já mostrada em cima. É só abrir o grupo (ou digitar uma palavra) e copiar o código.</li>
       </ul>
       <br><b>Aba Assuntos (códigos)</b> — a tabela única de assuntos (CNJ × eproc × DCP).
       <ul>
@@ -287,7 +304,8 @@ function prep(d){
     return {i,fav,nome,comp:a.comp,sis:a.sis,sisKey,cc:a.cc,cn:a.cn,ac:a.ac,an:(a.an||"").replace(/\s*\(CNJ\s*\d+\)/,""),
       cnj:cnjM?cnjM[1]:"",at:a.at,opts,hay,nn:norm(nome)};
   });
-  ASS=d.assuntos.map(r=>({cnj:String(r[0]??""),ep:String(r[1]??""),nome:r[2]||"",ramo:r[3]||"",path:r[4]||"",
+  const parseL=s=>(!s||/^(N[ÃA]O LAN|s[oó] compl|n[aã]o exist|—)/i.test(s))?[]:s.split(/,\s*/).map(x=>x.trim()).filter(x=>x&&!/s[oó] combinado/i.test(x));
+  ASS=d.assuntos.map(r=>({cnj:String(r[0]??""),ep:String(r[1]??""),nome:r[2]||"",ramo:r[3]||"",path:r[4]||"",epC:parseL(r[5]),dcC:parseL(r[6]),
     epL:r[5]||"",dcp:r[6]||"",hay:norm([r[0],r[1],r[2],r[4],r[3]].join(" | ")),nn:norm(r[2])}));
 }
 
@@ -369,7 +387,7 @@ function cardAcao(a){
   const usesCNJ=a.sisKey==="DCP"||a.sisKey==="SEEU"||a.sisKey==="pje";
   let assunto;
   if(needsAssunto(a)){
-    assunto=`<div class="val"><span class="name">${hl(a.an)}</span> <button class="linkbtn" data-goassunto="${esc(a.an)}">Procurar assunto →</button></div>`;
+    assunto=`<div class="val"><span class="name">${hl(a.an)}</span> <button class="linkbtn" data-ctx="${a.i}">Escolher assunto →</button></div>`;
   } else {
     const main = asBtn(a.ac) + (a.cnj&&a.cnj!==a.ac?asBtn(a.cnj):"");
     assunto=`<div class="val">${main}<span class="name">${hl(a.an)}</span></div>`;
@@ -429,7 +447,63 @@ function cardAss(s){
       <div class="lbl">Ramo</div><div class="val"><span class="name">${esc(s.ramo)}</span></div>
     </div></article>`;
 }
+const CTXMAP={
+  "Cível":["eproc",["Cível"]],"Família":["eproc",["Família"]],"Órfãos e Sucessões":["eproc",["Orfãos e Sucessões","Órfãos e Sucessões"]],
+  "Empresarial":["eproc",["Empresarial"]],"Fazenda Pública e Dívida Ativa":["eproc",["Fazenda Pública (Geral)","Fazenda Pública (Saúde)","Dívida Ativa Estadual","Dívida Ativa Municipal"]],
+  "Registros Públicos":["eproc",["Registros Públicos","Registro Civil de Pessoas Naturais"]],
+  "Infância e Juventude (não infracional)":["eproc",["Infância e Juventude","Idoso"]],
+  "Juizados Especiais Cíveis e Fazendários":["eproc",["Juizado Especial Cível (JEC)","Juizado Especial Fazendário (JEF)"]],
+  "Criminal":["dcp",["Criminal","Júri"]],"Violência Doméstica":["dcp",["Violência Doméstica"]],"Juizado Especial Criminal":["dcp",["JECrim"]],
+  "Infância e Juventude – Infracional":["dcp",["Infância Infracional"]],
+  "Execução Penal":["ramo",["Direito Penal","Direito Processual Penal"]]
+};
+function ctxList(a){
+  const m=CTXMAP[a.comp]; if(!m) return null;
+  const [sys,comps]=m;
+  let list;
+  if(sys==="eproc") list=ASS.filter(s=>s.epC.some(c=>comps.includes(c)));
+  else if(sys==="dcp") list=ASS.filter(s=>s.dcC.some(c=>comps.includes(c)));
+  else list=ASS.filter(s=>comps.includes(s.ramo));
+  return {sys,comps,list};
+}
+function renderAssCtx(){
+  const a=ACOES[state.ctx]; const st=$("#st-as"), L=$("#list-as");
+  const cx=ctxList(a);
+  const useEp=cx&&cx.sys==="eproc";
+  const where=!cx?"":cx.sys==="eproc"?`liberados no eproc para ${cx.comps.join(" / ")}`:cx.sys==="dcp"?`ativos no DCP para ${cx.comps.join(" / ")}`:`de ${cx.comps.join(" e ")}`;
+  let head=`<div class="ctx"><div class="t">Escolhendo o assunto para</div><div class="a">${a.fav?"★ ":""}${esc(a.nome)}</div>
+    <div class="r"><span class="badge sis ${a.sisKey}">${esc(a.sis)}</span><span class="badge">${esc(a.comp)}</span>
+    <span class="lbl" style="margin-left:6px">Classe</span>${classBtns(a.cc)}<span>${esc(a.cn)}</span></div>
+    ${a.at?`<div class="s">⚠ ${esc(a.at.replace(/^⚠\s*/,""))}</div>`:""}
+    <div class="s">${cx?`Mostrando só os assuntos ${esc(where)}. `:""}Abra um grupo ou digite acima para filtrar; clique no código para copiar. <button class="linkbtn" data-ctxoff="1">Ver todos os assuntos</button> · <button class="linkbtn" data-view="acoes">← voltar para a ação</button></div></div>`;
+  if(a.opts.length) head+=`<div class="group" style="margin-bottom:10px"><h4>Sugeridos para esta ação</h4>${a.opts.map(o=>`<div class="opt">${asBtn(o.code)}${o.cnj?asBtn(o.cnj):""}<span class="name">${esc(o.nome)}</span></div>`).join("")}</div>`;
+  if(!cx){ st.textContent=""; L.innerHTML=head+`<div class="empty">Não há filtro de assuntos para esta competência — digite acima para pesquisar na tabela inteira.</div>`; return; }
+  const toks=tokens(state.q.assuntos);
+  const items=cx.list.filter(s=>toks.every(t=>s.hay.includes(t)));
+  st.textContent="";
+  if(!items.length){ L.innerHTML=head+`<div class="empty"><b>Nenhum assunto encontrado neste filtro</b><button class="linkbtn" data-ctxoff="1">Pesquisar na tabela inteira</button></div>`; return; }
+  const groups=new Map();
+  for(const s of items){ const top=(s.path.split(" > ")[0]||s.nome); const k=s.ramo+"||"+top; if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(s); }
+  const openAll=toks.length>0||items.length<=40;
+  let h=`<div class="status">${items.length} assunto(s) em ${groups.size} grupo(s)${toks.length?` com “${esc(state.q.assuntos)}”`:""}</div>`;
+  const rc={}; for(const s of items) rc[s.ramo]=(rc[s.ramo]||0)+1;
+  const keys=[...groups.keys()].sort((x,y)=>{const rx=x.split("||")[0],ry=y.split("||")[0];return (rc[ry]-rc[rx])||(rx<ry?-1:rx>ry?1:0)});
+  let lastR=null;
+  for(const k of keys){
+    const arr=groups.get(k);
+    const [ramo,top]=k.split("||");
+    if(ramo!==lastR){h+=`<div class="section-title">${esc(ramo||"Outros")} · ${rc[ramo]}</div>`;lastR=ramo;}
+    h+=`<details class="grp"${openAll?" open":""}><summary>${hl(top)} <span class="c">${arr.length}</span></summary>`+
+      arr.map(s=>{
+        const codes=useEp?codeBtn(s.ep,"","eproc")+codeBtn(s.cnj,"cnj","CNJ"):codeBtn(s.cnj,"cnj","CNJ");
+        const sub=s.path.split(" > ").slice(1).join(" › ");
+        return `<div class="arow">${codes}<span class="nm">${hl(s.nome)}</span>${sub?`<span class="pt">${esc(sub)}</span>`:""}</div>`;
+      }).join("")+`</details>`;
+  }
+  L.innerHTML=head+h;
+}
 function renderAss(){
+  if(state.ctx!=null) return renderAssCtx();
   const res=searchAss(); const st=$("#st-as"), L=$("#list-as");
   if(res===null){
     st.innerHTML=`Tabela com ${ASS.length.toLocaleString("pt-BR")} assuntos. Digite um código CNJ (ex.: 7779), um código do eproc (ex.: 060503) ou parte do nome (ex.: furto).`;
@@ -525,7 +599,7 @@ function render(){
   const inp=$("#q");
   $(".searchrow").style.display=(state.view==="ajuda"||state.view==="sugestao")?"none":"";
   $("#hint").innerHTML=state.view==="bairros"?'Digite o bairro sem precisar de acento. Escolha uma competência nos botões abaixo para destacá-la. <kbd>/</kbd> volta para a busca · <kbd>Esc</kbd> limpa.':'Digite qualquer palavra, sem precisar de acento. Clique num código para copiar. <kbd>/</kbd> volta para a busca · <kbd>Esc</kbd> limpa.';
-  inp.placeholder=state.view==="bairros"?"Digite o bairro… Ex.: Méier, Bangu, Tijuca, Ilha":state.view==="assuntos"?"Código CNJ, código do eproc ou nome do assunto… Ex.: 7779, 060503, furto":"O que a parte quer? Ex.: despejo, pensão, plano de saúde, furto…";
+  inp.placeholder=(state.view==="assuntos"&&state.ctx!=null)?"Filtrar os assuntos desta ação… Ex.: cheque, contrato, aluguel":state.view==="bairros"?"Digite o bairro… Ex.: Méier, Bangu, Tijuca, Ilha":state.view==="assuntos"?"Código CNJ, código do eproc ou nome do assunto… Ex.: 7779, 060503, furto":"O que a parte quer? Ex.: despejo, pensão, plano de saúde, furto…";
   if(state.q[state.view]!==undefined && inp.value!==state.q[state.view]) inp.value=state.q[state.view];
   $("#clear").style.display=inp.value?"block":"none";
   if(state.view==="acoes"){renderFilters();renderAcoes()}
@@ -566,15 +640,17 @@ document.addEventListener("keydown",e=>{
   if(e.key==="Escape"&&state.view!=="ajuda"&&state.view!=="sugestao"){state.q[state.view]="";state.bairro=null;$("#q").value="";render();$("#q").focus()}
 });
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-copy],[data-view],[data-comp],[data-sis],[data-goassunto],[data-bairro],[data-bcomp],[data-bclear],[data-gobairro],[data-suggest],[data-fbtype],[data-fbcopy],#more,#moreAs");
+  const t=e.target.closest("[data-copy],[data-view],[data-comp],[data-sis],[data-goassunto],[data-bairro],[data-bcomp],[data-bclear],[data-gobairro],[data-ctx],[data-ctxoff],[data-suggest],[data-fbtype],[data-fbcopy],#more,#moreAs");
   if(!t) return;
   if(t.dataset.copy!==undefined){copy(t.dataset.copy);return}
-  if(t.dataset.view){setView(t.dataset.view);return}
+  if(t.dataset.view){if(t.dataset.view==="assuntos"&&t.classList.contains("tab"))state.ctx=null;setView(t.dataset.view);return}
   if(t.dataset.bairro!==undefined){state.bairro=t.dataset.bairro;state.q.bairros=t.dataset.bairro;$("#q").value=t.dataset.bairro;$("#clear").style.display="block";renderBairros();window.scrollTo({top:0});return}
   if(t.dataset.bcomp!==undefined){state.bcomp=state.bcomp===t.dataset.bcomp?"":t.dataset.bcomp;renderBairros();return}
   if(t.dataset.suggest!==undefined){$("#fbitem").value=t.dataset.suggest;setFbType("Correção");$("#fbres").innerHTML="";setView("sugestao");window.scrollTo({top:0});return}
   if(t.dataset.fbtype!==undefined){setFbType(t.dataset.fbtype);return}
   if(t.dataset.fbcopy!==undefined){copy(fbText());return}
+  if(t.dataset.ctx!==undefined){state.ctx=+t.dataset.ctx;state.q.assuntos="";setView("assuntos");window.scrollTo({top:0});return}
+  if(t.dataset.ctxoff!==undefined){state.ctx=null;renderAss();$("#q").focus();return}
   if(t.dataset.gobairro!==undefined){state.bcomp=t.dataset.gobairro;state.bairro=null;state.q.bairros="";setView("bairros");window.scrollTo({top:0});return}
   if(t.dataset.bclear!==undefined){state.bairro=null;state.q.bairros="";$("#q").value="";$("#clear").style.display="none";renderBairros();$("#q").focus();return}
   if(t.dataset.comp!==undefined){state.comp=t.dataset.comp;state.limit=40;renderFilters();renderAcoes();return}
@@ -582,7 +658,7 @@ document.addEventListener("click",e=>{
   if(t.dataset.goassunto!==undefined){
     let q=t.dataset.goassunto||"";
     if(/^(usar o assunto|conforme|assunto da)/i.test(q)) q="";
-    state.q.assuntos=q; state.limitAs=40; setView("assuntos"); window.scrollTo({top:0}); return}
+    state.q.assuntos=q; state.limitAs=40; state.ctx=null; setView("assuntos"); window.scrollTo({top:0}); return}
   if(t.id==="more"){state.limit+=60;renderAcoes();return}
   if(t.id==="moreAs"){state.limitAs+=60;renderAss();return}
 });
