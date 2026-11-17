@@ -111,6 +111,23 @@ button.code:active{transform:scale(.97)}
 .group{background:#fff;border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:10px}
 .group h4{margin:0 0 8px;font-size:15.5px;color:var(--brand)}
 .group .bgrid .bchip{padding:4px 9px;font-size:13.5px}
+/* Sugestões */
+.fb{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px;max-width:720px}
+.fb h2{margin:0 0 4px;font-size:20px;color:var(--brand)}
+.fb p.sub{margin:0 0 14px;color:var(--muted);font-size:14px}
+.fb label.f{display:block;font-weight:600;font-size:13.5px;margin:12px 0 5px}
+.fb input[type=text],.fb input[type=email],.fb textarea{width:100%;font:inherit;font-size:15px;padding:9px 11px;border:1px solid #cdd3dc;border-radius:9px;background:#fff;color:var(--ink)}
+.fb textarea{min-height:140px;resize:vertical}
+.fb input:focus,.fb textarea:focus{outline:0;border-color:var(--brand2);box-shadow:0 0 0 3px #d6e4f5}
+.fb .types{display:flex;gap:6px;flex-wrap:wrap}
+.fb .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.send{margin-top:14px;background:var(--brand);color:#fff;border:0;border-radius:9px;padding:11px 22px;font-weight:700;font-size:15px}
+.send:disabled{opacity:.6;cursor:default}
+.fbmsg{margin-top:12px;border-radius:9px;padding:10px 12px;font-size:14px}
+.fbmsg.ok{background:#e9f7ef;border:1px solid #b6e2c6;color:#0f5132}
+.fbmsg.err{background:#fbecec;border:1px solid #efc2c2;color:#7a1f1f}
+.small{font-size:12.5px;color:var(--muted);margin-top:6px}
+@media (max-width:640px){.fb .row2{grid-template-columns:1fr}}
 footer{font-size:12.5px;color:var(--muted);padding:24px 0 10px;border-top:1px solid var(--line);margin-top:30px}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);opacity:0;
   background:#1b2430;color:#fff;padding:9px 16px;border-radius:9px;font-size:14px;transition:.18s;pointer-events:none;z-index:50}
@@ -142,6 +159,7 @@ mark{background:#ffe9a8;color:inherit;border-radius:3px;padding:0 1px}
         <button class="tab" role="tab" data-view="acoes" aria-selected="true">Ações</button>
         <button class="tab" role="tab" data-view="assuntos" aria-selected="false"><span class="full">Assuntos (códigos)</span><span class="short">Assuntos</span></button>
         <button class="tab" role="tab" data-view="bairros" aria-selected="false">Bairros</button>
+        <button class="tab" role="tab" data-view="sugestao" aria-selected="false"><span class="full">Sugestões</span><span class="short">Sugerir</span></button>
         <button class="tab" role="tab" data-view="ajuda" aria-selected="false"><span class="full">Como usar</span><span class="short">Ajuda</span></button>
       </div>
     </div>
@@ -173,6 +191,31 @@ mark{background:#ffe9a8;color:inherit;border-radius:3px;padding:0 1px}
     <div class="filters" id="bcomps"></div>
     <div class="status" id="st-b"></div>
     <div id="list-b"></div>
+  </section>
+
+  <section id="v-sugestao" hidden style="padding-top:16px">
+    <form class="fb" id="fbform" novalidate>
+      <h2>Sugestão ou correção</h2>
+      <p class="sub">Encontrou um código errado, uma ação faltando ou tem uma ideia para melhorar? Escreva aqui e clique em Enviar — a mensagem chega por e-mail para quem mantém o site.</p>
+      <label class="f">Tipo</label>
+      <div class="types" id="fbtypes">
+        <button type="button" class="chip" data-fbtype="Correção" aria-pressed="true">Correção de informação</button>
+        <button type="button" class="chip" data-fbtype="Sugestão" aria-pressed="false">Sugestão / ideia</button>
+        <button type="button" class="chip" data-fbtype="Ação ou bairro faltando" aria-pressed="false">Ação ou bairro faltando</button>
+        <button type="button" class="chip" data-fbtype="Outro" aria-pressed="false">Outro</button>
+      </div>
+      <label class="f" for="fbitem">Sobre qual item? <span style="font-weight:400;color:var(--muted)">(opcional)</span></label>
+      <input type="text" id="fbitem" maxlength="200" placeholder="Ex.: Divórcio consensual · Bairro Méier · assunto 060503">
+      <label class="f" for="fbtext">Mensagem</label>
+      <textarea id="fbtext" maxlength="4000" placeholder="Descreva o que está errado e qual seria o certo, ou a sua sugestão."></textarea>
+      <div class="row2">
+        <div><label class="f" for="fbname">Seu nome <span style="font-weight:400;color:var(--muted)">(opcional)</span></label><input type="text" id="fbname" maxlength="100"></div>
+        <div><label class="f" for="fbmail">Seu e-mail para resposta <span style="font-weight:400;color:var(--muted)">(opcional)</span></label><input type="email" id="fbmail" maxlength="150"></div>
+      </div>
+      <input type="text" id="fbhoney" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
+      <button type="submit" class="send" id="fbsend">Enviar</button>
+      <div id="fbres"></div>
+    </form>
   </section>
 
   <section id="v-ajuda" hidden>
@@ -218,7 +261,10 @@ const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 const FONTES='Fontes: tabelas de classes e assuntos do CNJ (05/11/2026); tabela de assuntos exportada do eproc (09/11/2026); relatório "Assuntos por Competência" do DCP (09/11/2026); tela de assuntos do PJe. Sistemas conforme avisos do TJRJ até nov/2026. ⚠ Classes dos Juizados (436 e 14695) não constam na tabela enviada — conferir.';
 
 let ACOES=[], ASS=[], BD=null;
-const VIEWS=["acoes","assuntos","bairros","ajuda"];
+const VIEWS=["acoes","assuntos","bairros","sugestao","ajuda"];
+/* Para onde vão as sugestões (FormSubmit). Depois de ativar, troque o e-mail pelo código secreto que o FormSubmit enviar. */
+const FEEDBACK_TO="yuri.m.esteves@hotmail.com";
+let fbType="Correção";
 const state={view:"acoes", q:{acoes:"",assuntos:"",bairros:""}, bairro:null, bcomp:"", comp:"", sis:"", fav:false, limit:40, limitAs:40};
 
 function load(){
@@ -337,7 +383,7 @@ function cardAcao(a){
     <div class="rows">
       <div class="lbl">Classe</div><div class="val">${classBtns(a.cc)}<span class="name">${hl(a.cn)}</span></div>
       <div class="lbl">Assunto</div>${assunto}
-    </div>${warn}${opts}</article>`;
+    </div>${warn}${opts}<div style="text-align:right;margin-top:6px"><button class="linkbtn" style="font-size:12.5px;color:var(--muted)" data-suggest="Ação: ${esc(a.nome)} (${esc(a.comp)})">✎ sugerir correção</button></div></article>`;
 }
 
 function renderAcoes(){
@@ -413,7 +459,7 @@ function bairroCard(b){
   const items=b.i.filter(it=>!(b.parcial&&it.miss));
   const reg=items.filter(it=>!BD.always.includes(it.c));
   const alw=items.filter(it=>BD.always.includes(it.c));
-  let h=`<div class="bhead"><h2>${esc(b.n)}</h2><button class="linkbtn" data-bclear="1">← ver todos os bairros</button></div>`;
+  let h=`<div class="bhead"><h2>${esc(b.n)}</h2><button class="linkbtn" data-bclear="1">← ver todos os bairros</button><button class="linkbtn" style="margin-left:auto;font-size:13px;color:var(--muted)" data-suggest="Bairro: ${esc(b.n)}">✎ sugerir correção</button></div>`;
   if(b.a) h+=`<div class="warn" style="margin:0 0 12px"><b>⚠ Atenção:</b>${esc(b.a)}</div>`;
   if(state.bcomp){
     const it=b.i.find(x=>x.c===state.bcomp);
@@ -477,10 +523,10 @@ function render(){
   for(const v of VIEWS){ $("#v-"+v).hidden=state.view!==v; }
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.view===state.view));
   const inp=$("#q");
-  $(".searchrow").style.display=state.view==="ajuda"?"none":"";
+  $(".searchrow").style.display=(state.view==="ajuda"||state.view==="sugestao")?"none":"";
   $("#hint").innerHTML=state.view==="bairros"?'Digite o bairro sem precisar de acento. Escolha uma competência nos botões abaixo para destacá-la. <kbd>/</kbd> volta para a busca · <kbd>Esc</kbd> limpa.':'Digite qualquer palavra, sem precisar de acento. Clique num código para copiar. <kbd>/</kbd> volta para a busca · <kbd>Esc</kbd> limpa.';
   inp.placeholder=state.view==="bairros"?"Digite o bairro… Ex.: Méier, Bangu, Tijuca, Ilha":state.view==="assuntos"?"Código CNJ, código do eproc ou nome do assunto… Ex.: 7779, 060503, furto":"O que a parte quer? Ex.: despejo, pensão, plano de saúde, furto…";
-  if(state.view!=="ajuda" && inp.value!==state.q[state.view]) inp.value=state.q[state.view];
+  if(state.q[state.view]!==undefined && inp.value!==state.q[state.view]) inp.value=state.q[state.view];
   $("#clear").style.display=inp.value?"block":"none";
   if(state.view==="acoes"){renderFilters();renderAcoes()}
   if(state.view==="assuntos")renderAss();
@@ -502,7 +548,8 @@ function copy(text){
 function setView(v,push=true){
   state.view=v; render();
   if(push){try{history.replaceState(null,"","#"+v)}catch(e){location.hash=v}}
-  if(v!=="ajuda") $("#q").focus();
+  if(v==="sugestao") setTimeout(()=>($("#fbitem").value?$("#fbtext"):$("#fbitem")).focus(),30);
+  else if(v!=="ajuda") $("#q").focus();
 }
 let deb;
 $("#q").addEventListener("input",e=>{
@@ -513,16 +560,21 @@ $("#q").addEventListener("input",e=>{
 });
 $("#clear").addEventListener("click",()=>{state.q[state.view]="";state.bairro=null;$("#q").value="";render();$("#q").focus()});
 document.addEventListener("keydown",e=>{
-  if(e.key==="/"&&document.activeElement!==$("#q")&&state.view!=="ajuda"){e.preventDefault();$("#q").focus();$("#q").select()}
-  if(e.key==="Escape"&&state.view!=="ajuda"){state.q[state.view]="";state.bairro=null;$("#q").value="";render();$("#q").focus()}
+  const typing=/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)&&document.activeElement!==$("#q");
+  if(typing) return;
+  if(e.key==="/"&&document.activeElement!==$("#q")&&state.view!=="ajuda"&&state.view!=="sugestao"){e.preventDefault();$("#q").focus();$("#q").select()}
+  if(e.key==="Escape"&&state.view!=="ajuda"&&state.view!=="sugestao"){state.q[state.view]="";state.bairro=null;$("#q").value="";render();$("#q").focus()}
 });
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-copy],[data-view],[data-comp],[data-sis],[data-goassunto],[data-bairro],[data-bcomp],[data-bclear],[data-gobairro],#more,#moreAs");
+  const t=e.target.closest("[data-copy],[data-view],[data-comp],[data-sis],[data-goassunto],[data-bairro],[data-bcomp],[data-bclear],[data-gobairro],[data-suggest],[data-fbtype],[data-fbcopy],#more,#moreAs");
   if(!t) return;
   if(t.dataset.copy!==undefined){copy(t.dataset.copy);return}
   if(t.dataset.view){setView(t.dataset.view);return}
   if(t.dataset.bairro!==undefined){state.bairro=t.dataset.bairro;state.q.bairros=t.dataset.bairro;$("#q").value=t.dataset.bairro;$("#clear").style.display="block";renderBairros();window.scrollTo({top:0});return}
   if(t.dataset.bcomp!==undefined){state.bcomp=state.bcomp===t.dataset.bcomp?"":t.dataset.bcomp;renderBairros();return}
+  if(t.dataset.suggest!==undefined){$("#fbitem").value=t.dataset.suggest;setFbType("Correção");$("#fbres").innerHTML="";setView("sugestao");window.scrollTo({top:0});return}
+  if(t.dataset.fbtype!==undefined){setFbType(t.dataset.fbtype);return}
+  if(t.dataset.fbcopy!==undefined){copy(fbText());return}
   if(t.dataset.gobairro!==undefined){state.bcomp=t.dataset.gobairro;state.bairro=null;state.q.bairros="";setView("bairros");window.scrollTo({top:0});return}
   if(t.dataset.bclear!==undefined){state.bairro=null;state.q.bairros="";$("#q").value="";$("#clear").style.display="none";renderBairros();$("#q").focus();return}
   if(t.dataset.comp!==undefined){state.comp=t.dataset.comp;state.limit=40;renderFilters();renderAcoes();return}
@@ -536,6 +588,38 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("change",e=>{if(e.target.id==="favonly"){state.fav=e.target.checked;renderFilters();renderAcoes()}});
 window.addEventListener("hashchange",()=>{const v=location.hash.slice(1);if(VIEWS.includes(v)&&v!==state.view)setView(v,false)});
+
+/* ---------- sugestões ---------- */
+function setFbType(v){fbType=v;document.querySelectorAll("[data-fbtype]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.fbtype===v))}
+function fbText(){
+  return `Tipo: ${fbType}\nItem: ${$("#fbitem").value||"—"}\nNome: ${$("#fbname").value||"—"}\nE-mail: ${$("#fbmail").value||"—"}\n\n${$("#fbtext").value}`;
+}
+function fbFail(why){
+  const to=FEEDBACK_TO.includes("@")?FEEDBACK_TO:"";
+  $("#fbres").innerHTML=`<div class="fbmsg err"><b>Não foi possível enviar daqui.</b> ${esc(why||"")}<br>Clique em <button type="button" class="linkbtn" data-fbcopy="1">copiar a mensagem</button>${to?` e mande para <b>${esc(to)}</b>`:" e mande por e-mail para quem mantém o site"}.</div>`;
+}
+$("#fbform").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const msg=$("#fbtext").value.trim();
+  if(msg.length<5){$("#fbres").innerHTML=`<div class="fbmsg err">Escreva a mensagem antes de enviar.</div>`;$("#fbtext").focus();return}
+  if($("#fbhoney").value){return}
+  if(!FEEDBACK_TO||FEEDBACK_TO.startsWith("__")){fbFail("O envio ainda não foi configurado.");return}
+  const btn=$("#fbsend"); btn.disabled=true; btn.textContent="Enviando…";
+  const mail=$("#fbmail").value.trim();
+  const body={_subject:`[Distribuição Interativa] ${fbType}${$("#fbitem").value?" — "+$("#fbitem").value:""}`,
+    _template:"table",_captcha:"false",Tipo:fbType,Item:$("#fbitem").value||"—",Mensagem:msg,Nome:$("#fbname").value||"—",
+    "E-mail para resposta":mail||"—",Página:location.href.split("#")[0]};
+  if(/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) body._replyto=mail;
+  try{
+    const r=await fetch("https://formsubmit.co/ajax/"+FEEDBACK_TO.trim(),{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(body)});
+    const j=await r.json().catch(()=>({}));
+    if(r.ok&&String(j.success)==="true"){
+      $("#fbres").innerHTML=`<div class="fbmsg ok"><b>Mensagem enviada. Obrigado!</b></div>`;
+      $("#fbtext").value="";$("#fbitem").value="";
+    } else fbFail(j.message||"");
+  }catch(err){ fbFail("Verifique a internet — nesta versão o envio pode estar bloqueado."); }
+  btn.disabled=false; btn.textContent="Enviar";
+});
 
 load().then(d=>{
   prep(d);
