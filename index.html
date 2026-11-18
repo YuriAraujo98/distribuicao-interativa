@@ -96,17 +96,18 @@ button.code:active{transform:scale(.97)}
 .letter{font-weight:700;color:var(--brand);font-size:13px;margin:14px 2px 6px;border-bottom:1px solid var(--line);padding-bottom:3px}
 .bhead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
 .bhead h2{margin:0;font-size:22px;color:var(--brand)}
-.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.tiles{display:flex;flex-direction:column;gap:8px;max-width:820px}
 .tile{background:#fff;border:1px solid var(--line);border-radius:11px;padding:11px 13px;border-left:4px solid var(--brand2)}
-.tile .tl{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700}
-.tile .tv{font-size:17px;font-weight:700;margin-top:3px;color:var(--ink);line-height:1.3}
-.tile .tv div+div{margin-top:3px}
+.tile .tl{font-size:18px;color:var(--ink);font-weight:700;line-height:1.3}
+.tile .tv{font-size:14.5px;font-weight:500;margin-top:2px;color:#4b5563;line-height:1.35}
+.tile .tv div+div{margin-top:2px}
 .tile .to{font-size:13px;color:var(--muted);margin-top:5px}
 .tile .tp{display:inline-block;margin-top:6px;font-size:12px;background:var(--warn-bg);color:var(--warn-ink);border:1px solid var(--warn-line);border-radius:6px;padding:1px 7px}
 .tile.miss{border-left-color:#c9ced6;background:#fafbfc}
-.tile.miss .tv{color:var(--muted);font-weight:400;font-size:14px}
+.tile.miss .tv{color:var(--muted);font-weight:400;font-size:13.5px;font-style:italic}
+.tile.miss .tl{color:#6b7280}
 .tile.hl{border-left-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
-.always{margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:11px 13px;font-size:14px}
+.always{max-width:820px;margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:11px 13px;font-size:14px}
 .always b{display:block;margin-bottom:6px}
 .big{background:var(--brand);color:#fff;border-radius:12px;padding:14px 16px;margin-bottom:12px}
 .big .tl{font-size:12.5px;opacity:.8;text-transform:uppercase;letter-spacing:.5px;font-weight:700}
@@ -192,7 +193,7 @@ mark{background:#ffe9a8;color:inherit;border-radius:3px;padding:0 1px}
     <div class="searchrow">
       <div class="search">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
-        <input id="q" type="text" autocomplete="off" spellcheck="false" placeholder="O que a parte quer? Ex.: despejo, pensão, plano de saúde, furto…">
+        <input id="q" type="text" autocomplete="off" spellcheck="false" placeholder="" aria-label="Pesquisar">
         <button class="clear" id="clear" title="Limpar (Esc)">✕</button>
       </div>
       <div class="hint" id="hint">Digite qualquer palavra, sem precisar de acento. Clique num código para copiar. <kbd>/</kbd> volta para a busca · <kbd>Esc</kbd> limpa.</div>
@@ -608,7 +609,7 @@ function render(){
   const inp=$("#q");
   $(".searchrow").style.display=(state.view==="ajuda"||state.view==="sugestao")?"none":"";
   $("#hint").innerHTML=state.view==="bairros"?'Digite o bairro sem precisar de acento. Escolha uma competência nos botões abaixo para destacá-la. <kbd>/</kbd> volta para a busca · <kbd>Esc</kbd> limpa.':'Digite qualquer palavra, sem precisar de acento. Clique num código para copiar. <kbd>/</kbd> volta para a busca · <kbd>Esc</kbd> limpa.';
-  inp.placeholder=(state.view==="assuntos"&&state.ctx!=null)?"Filtrar os assuntos desta ação… Ex.: cheque, contrato, aluguel":state.view==="bairros"?"Digite o bairro… Ex.: Méier, Bangu, Tijuca, Ilha":state.view==="assuntos"?"Código CNJ, código do eproc ou nome do assunto… Ex.: 7779, 060503, furto":"O que a parte quer? Ex.: despejo, pensão, plano de saúde, furto…";
+  inp.placeholder="";
   if(state.q[state.view]!==undefined && inp.value!==state.q[state.view]) inp.value=state.q[state.view];
   $("#clear").style.display=inp.value?"block":"none";
   if(state.view==="acoes"){renderFilters();renderAcoes()}
