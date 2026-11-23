@@ -150,6 +150,41 @@ details.grp>summary .rm{margin-left:auto;color:var(--muted);font-weight:400;font
 .arow .nm{font-size:14.5px}
 .arow .pt{font-size:12px;color:var(--muted);width:100%;padding-left:2px}
 .arow .code{font-size:13.5px;padding:1px 7px}
+/* Mapa */
+[hidden]{display:none!important}
+.seg{display:inline-flex;background:#e6e9ee;border-radius:10px;padding:3px;margin-top:14px;gap:3px}
+.seg button{border:0;background:none;padding:7px 14px;border-radius:8px;font-weight:600;color:#475569;font-size:14px}
+.seg button[aria-pressed=true]{background:#fff;color:var(--brand);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.maplay{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px;margin-top:10px}
+.mapbox{position:relative;background:#eaf1f8;border:1px solid var(--line);border-radius:12px;overflow:hidden;touch-action:none;min-height:340px}
+#mapsvg{width:100%;height:auto;display:block;cursor:grab}
+#mapsvg.drag{cursor:grabbing}
+#mapg path{stroke:#fff;stroke-width:.7;vector-effect:non-scaling-stroke;transition:opacity .15s}
+#mapg path.nodata{fill:#d5dae1}
+#mapg path:hover{stroke:#1b2430;stroke-width:1.6}
+#mapg path.sel{stroke:#1b2430;stroke-width:2.4}
+#mapg.fade path{opacity:.18}
+#mapg.fade path.on{opacity:1}
+.mapctl{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:4px;z-index:2}
+.mapctl button{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:#fff;font-size:18px;line-height:1;color:var(--brand)}
+.maptip{position:absolute;pointer-events:none;background:#1b2430;color:#fff;font-size:13px;padding:6px 9px;border-radius:7px;white-space:nowrap;z-index:3;transform:translate(-50%,-115%)}
+.maptip b{display:block;font-size:13.5px}
+.mapmsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;color:var(--muted);font-size:14px}
+.mappanel{display:flex;flex-direction:column;gap:10px;min-width:0}
+.legend{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px}
+.legend h4{margin:2px 4px 8px;font-size:14px;color:var(--brand)}
+.lg{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;text-align:left;padding:6px 6px;border-radius:7px;font-size:14px;color:var(--ink)}
+.lg:hover{background:#f2f5f9}
+.lg[aria-pressed=true]{background:#eef4fb;font-weight:700}
+.lg .sw{width:14px;height:14px;border-radius:4px;flex:0 0 auto}
+.lg .ct{margin-left:auto;color:var(--muted);font-size:12.5px;font-weight:400}
+.lgl{padding:4px 6px 8px 28px;display:flex;flex-wrap:wrap;gap:4px}
+.lgl .bchip{padding:3px 8px;font-size:12.5px}
+.selbox{background:#fff;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:11px 13px}
+.selbox .n{font-size:18px;font-weight:700;color:var(--brand)}
+.selbox .c{font-size:12.5px;color:var(--muted);margin-top:4px}
+.selbox .v{font-size:15px;font-weight:600;margin-top:1px}
+@media (max-width:760px){.maplay{grid-template-columns:1fr}}
 footer{font-size:12.5px;color:var(--muted);padding:24px 0 10px;border-top:1px solid var(--line);margin-top:30px}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);opacity:0;
   background:#1b2430;color:#fff;padding:9px 16px;border-radius:9px;font-size:14px;transition:.18s;pointer-events:none;z-index:50}
@@ -215,7 +250,23 @@ mark{background:#ffe9a8;color:inherit;border-radius:3px;padding:0 1px}
   </section>
 
   <section id="v-bairros" hidden>
+    <div class="seg" id="bmode"><button type="button" data-bmode="lista" aria-pressed="true">☰ Lista de bairros</button><button type="button" data-bmode="mapa" aria-pressed="false">🗺 Mapa das regionais</button></div>
     <div class="filters" id="bcomps"></div>
+    <div id="mapwrap" hidden>
+      <div class="maplay">
+        <div class="mapbox" id="mapbox">
+          <div class="mapctl"><button type="button" data-zoom="1" title="Aproximar">+</button><button type="button" data-zoom="-1" title="Afastar">−</button><button type="button" data-zoom="0" title="Ver a cidade toda">⟲</button></div>
+          <svg id="mapsvg" viewBox="0 0 1000 520" preserveAspectRatio="xMidYMid meet"><g id="mapg"></g></svg>
+          <div class="maptip" id="maptip" hidden></div>
+          <div class="mapmsg" id="mapmsg">Carregando o mapa…</div>
+        </div>
+        <aside class="mappanel">
+          <div id="mapsel"></div>
+          <div class="legend" id="maplegend"></div>
+        </aside>
+      </div>
+      <div class="small" style="margin-top:8px">Limites dos bairros: Prefeitura do Rio (data.rio). Passe o mouse ou toque num bairro para ver; clique numa regional na legenda para destacar os bairros dela. Use + / − ou a rodinha do mouse para dar zoom e arraste para mover.</div>
+    </div>
     <div class="status" id="st-b"></div>
     <div id="list-b"></div>
   </section>
@@ -267,6 +318,7 @@ mark{background:#ffe9a8;color:inherit;border-radius:3px;padding:0 1px}
         <li>Digite o bairro (ex.: <i>meier</i>, <i>bangu</i>, <i>ilha</i>) e clique nele. Aparecem as competências que mudam de bairro para bairro; as que são sempre na Capital ficam resumidas embaixo.</li>
         <li>Escolha uma competência nos botões do topo (ex.: <i>Família</i>) para deixá-la em destaque. Ela continua destacada quando você troca de bairro.</li>
         <li>Com uma competência escolhida e nenhum bairro, aparece a lista inversa: quais bairros vão para cada fórum.</li>
+        <li>Em <b>Mapa das regionais</b>, o mapa da cidade é pintado conforme o fórum de cada bairro (por padrão, a regional do Cível). Clique numa regional na legenda para ver a lista de bairros dela, ou escolha outra competência (Família, JEC, JECRIM…) nos botões. O mapa precisa de internet.</li>
         <li>“Bairro dividido” quer dizer que o bairro é atendido por mais de um juizado — depende da rua.</li>
       </ul>
     </div>
@@ -292,7 +344,7 @@ const VIEWS=["acoes","assuntos","bairros","sugestao","ajuda"];
 /* Para onde vão as sugestões (FormSubmit). Depois de ativar, troque o e-mail pelo código secreto que o FormSubmit enviar. */
 const FEEDBACK_TO="yuri.m.esteves@hotmail.com";
 let fbType="Correção";
-const state={view:"acoes", q:{acoes:"",assuntos:"",bairros:""}, bairro:null, bcomp:"", comp:"", sis:"", fav:false, limit:40, limitAs:40};
+const state={view:"acoes", q:{acoes:"",assuntos:"",bairros:""}, bairro:null, bcomp:"", bmode:"lista", comp:"", sis:"", fav:false, limit:40, limitAs:40};
 
 function load(){
   const a=window.__DATA?Promise.resolve(window.__DATA):fetch("data.json").then(r=>r.json());
@@ -531,8 +583,8 @@ function renderAss(){
 const lab=c=>BD.labels[c];
 function bcompChips(){
   const regional=BD.order.filter(c=>!BD.always.includes(c));
-  $("#bcomps").innerHTML=`<button class="chip" data-bcomp="" aria-pressed="${!state.bcomp}">Todas as competências</button>`+
-    regional.map(c=>`<button class="chip" data-bcomp="${esc(c)}" aria-pressed="${state.bcomp===c}">${esc(lab(c))}</button>`).join("");
+  $("#bcomps").innerHTML=`<button class="chip" data-bcomp="" aria-pressed="${!state.bcomp}">${state.bmode==="mapa"?"Regional (Cível)":"Todas as competências"}</button>`+
+    regional.filter(c=>!(state.bmode==="mapa"&&c==="CÍVEL")).map(c=>`<button class="chip" data-bcomp="${esc(c)}" aria-pressed="${state.bcomp===c}">${esc(lab(c))}</button>`).join("");
 }
 function tileHTML(it,hl){
   if(it.miss) return `<div class="tile miss"><div class="tl">${esc(lab(it.c))}</div><div class="tv">Não informado na planilha</div></div>`;
@@ -565,6 +617,9 @@ function bairroMatches(){
 function renderBairros(){
   if(!BD){$("#list-b").innerHTML=`<div class="empty"><b>Dados de bairros não carregados.</b></div>`;return}
   bcompChips();
+  document.querySelectorAll("[data-bmode]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.bmode===state.bmode));
+  if(state.bmode==="mapa"){ return renderMap(); }
+  $("#mapwrap").hidden=true;
   const st=$("#st-b"), L=$("#list-b");
   let sel=state.bairro?BD.bairros.find(b=>b.n===state.bairro):null;
   const m=bairroMatches();
@@ -589,6 +644,124 @@ function renderBairros(){
     h+=`<button class="bchip" data-bairro="${esc(b.n)}">${esc(b.n)}</button>`; }
   L.innerHTML=h+(last?"</div>":"");
 }
+
+/* ---------- mapa das regionais ---------- */
+const PAL=["#4E79A7","#F28E2B","#59A14F","#E15759","#76B7B2","#EDC948","#B07AA1","#FF9DA7","#9C755F","#17BECF","#BCBD22","#8C564B","#1F77B4","#D62728","#9467BD","#2CA02C","#E377C2","#AEC7E8","#FFBB78","#98DF8A","#C5B0D5","#C49C94"];
+const GEO_URLS=["Limite_de_Bairros.geojson","https://raw.githubusercontent.com/DATAUNIRIO/Mapas_e_Shapesfiles/master/rio/Limite_de_Bairros.geojson"];
+const GEO_KEY="distint_geo_v1";
+const ALIAS={"cavalcanti":"cavalcante","santa teresa":"santa tereza","sampaio":"sampaio correia","jardim sulacap":"sulacap","senador vasconcelos":"senador augusto vasconcelos","osvaldo cruz":"oswaldo cruz","praia da bandeira":"praia da bandeira (?)","bairro imperial de sao cristovao":"sao cristovao","imperial de sao cristovao":"sao cristovao","gardenia azul":"gardenia azul"};
+let GEO=null, geoLoading=false, mapT={s:1,x:0,y:0}, mapHL="", mapSel=null;
+function matchBairro(nome){
+  if(!BD) return null;
+  let k=norm(nome).replace(/\s+/g," ").trim();
+  if(/freguesia/.test(k)) k=/ilha/.test(k)?"freguesia (ilha)":"freguesia (jacarepagua)";
+  if(ALIAS[k]) k=ALIAS[k];
+  let b=BD.bairros.find(x=>x.nn===k);
+  if(!b){ const s=k.replace(/\s*\(.*?\)\s*/g,"").trim(); const c=BD.bairros.filter(x=>x.nn.replace(/\s*\(.*?\)\s*/g,"").trim()===s); if(c.length===1) b=c[0]; }
+  return b||null;
+}
+function simplifyRing(r,tol){
+  const out=[r[0]]; let last=r[0];
+  for(let i=1;i<r.length-1;i++){ const p=r[i]; if(Math.abs(p[0]-last[0])>tol||Math.abs(p[1]-last[1])>tol){ out.push(p); last=p; } }
+  out.push(r[r.length-1]); return out;
+}
+function processGeo(g){
+  const feats=[]; let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+  for(const f of g.features){ if(!f.geometry) continue;
+    const polys=f.geometry.type==="Polygon"?[f.geometry.coordinates]:f.geometry.type==="MultiPolygon"?f.geometry.coordinates:[];
+    const rings=[]; for(const p of polys) for(const r of p){ const s=simplifyRing(r,0.00022); if(s.length>=4) rings.push(s); }
+    for(const r of rings) for(const [x,y] of r){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+    const p=f.properties||{}; feats.push({n:String(p.nome||p.NOME||p.bairro||p.BAIRRO||p.name||"").trim(),rings});
+  }
+  const kx=Math.cos((y0+y1)/2*Math.PI/180), W=1000, sc=W/((x1-x0)*kx), H=Math.ceil((y1-y0)*sc);
+  const out=feats.map(f=>{ let big=null,ba=-1;
+    const d=f.rings.map(r=>{ let bx0=1e9,bx1=-1e9,by0=1e9,by1=-1e9;
+      const s=r.map(([x,y],i)=>{ const px=((x-x0)*kx*sc), py=((y1-y)*sc); if(px<bx0)bx0=px; if(px>bx1)bx1=px; if(py<by0)by0=py; if(py>by1)by1=py; return (i?"L":"M")+px.toFixed(1)+","+py.toFixed(1); }).join("")+"Z";
+      const a=(bx1-bx0)*(by1-by0); if(a>ba){ba=a;big=[(bx0+bx1)/2,(by0+by1)/2];} return s; }).join("");
+    return {n:f.n,d,c:big}; });
+  return {W,H,f:out};
+}
+function loadGeo(){
+  if(GEO||geoLoading) return; geoLoading=true;
+  try{ const c=localStorage.getItem(GEO_KEY); if(c){ GEO=JSON.parse(c); geoLoading=false; drawMap(); return; } }catch(e){}
+  const tryUrl=i=>{
+    if(i>=GEO_URLS.length){ geoLoading=false; $("#mapmsg").innerHTML="Não foi possível carregar o mapa. Ele precisa de internet — abra pelo site do GitHub (no link do Claude o mapa não carrega)."; return; }
+    fetch(GEO_URLS[i]).then(r=>{ if(!r.ok) throw 0; return r.json(); }).then(g=>{
+      GEO=processGeo(g); geoLoading=false;
+      try{ localStorage.setItem(GEO_KEY,JSON.stringify(GEO)); }catch(e){}
+      drawMap();
+    }).catch(()=>tryUrl(i+1));
+  };
+  tryUrl(0);
+}
+function mapComp(){ return state.bcomp||"CÍVEL"; }
+function forumOf(b,comp){ const it=b&&b.i.find(x=>x.c===comp); return (!it||it.miss)?null:it; }
+function colorMap(){
+  const comp=mapComp(), cnt=new Map();
+  for(const f of GEO.f){ const b=f.b; const it=forumOf(b,comp); if(it){ const k=it.l[0]; cnt.set(k,(cnt.get(k)||0)+1);} }
+  const keys=[...cnt.keys()].sort((a,b)=>(b==="Capital")-(a==="Capital")||cnt.get(b)-cnt.get(a));
+  const col=new Map(keys.map((k,i)=>[k,PAL[i%PAL.length]])); return {comp,cnt,keys,col};
+}
+function applyMapT(){ $("#mapg").setAttribute("transform",`translate(${mapT.x} ${mapT.y}) scale(${mapT.s})`); }
+function drawMap(){
+  if(!GEO||!BD) return;
+  $("#mapsvg").setAttribute("viewBox",`0 0 ${GEO.W} ${GEO.H}`);
+  GEO.f.forEach(f=>{ if(f.b===undefined) f.b=matchBairro(f.n); });
+  const {comp,cnt,keys,col}=colorMap();
+  const q=tokens(state.q.bairros);
+  const g=$("#mapg");
+  g.innerHTML=GEO.f.map((f,i)=>{ const it=forumOf(f.b,comp); const k=it?it.l[0]:"";
+    const on=(mapHL&&k===mapHL)||(q.length&&q.every(t=>norm(f.n).includes(t)))||(mapSel===i);
+    return `<path data-fi="${i}" d="${f.d}"${it?` fill="${col.get(k)}"`:""} class="${it?"":"nodata"}${on?" on":""}${mapSel===i?" sel":""}"/>`; }).join("");
+  g.classList.toggle("fade",!!(mapHL||q.length));
+  applyMapT();
+  $("#mapmsg").hidden=true; $("#mapbox").style.minHeight="0";
+  // legenda
+  let h=`<h4>${esc(lab(comp))} — fóruns</h4>`;
+  for(const k of keys){
+    h+=`<button class="lg" data-mhl="${esc(k)}" aria-pressed="${mapHL===k}"><span class="sw" style="background:${col.get(k)}"></span>${esc(k)}<span class="ct">${cnt.get(k)}</span></button>`;
+    if(mapHL===k){ const bs=GEO.f.filter(f=>{const it=forumOf(f.b,comp);return it&&it.l[0]===k}).map(f=>f.b.n).sort((a,b)=>a.localeCompare(b,"pt"));
+      h+=`<div class="lgl">${[...new Set(bs)].map(n=>`<button class="bchip" data-bairro="${esc(n)}">${esc(n)}</button>`).join("")}</div>`; }
+  }
+  const nod=GEO.f.filter(f=>!forumOf(f.b,comp)).length;
+  if(nod) h+=`<div class="lg" style="cursor:default"><span class="sw" style="background:#d5dae1"></span>Sem dados na planilha<span class="ct">${nod}</span></div>`;
+  $("#maplegend").innerHTML=h;
+  renderMapSel();
+}
+function renderMapSel(){
+  const el=$("#mapsel");
+  if(mapSel==null||!GEO){ el.innerHTML=`<div class="selbox"><div class="c">Clique num bairro do mapa para ver o fórum.</div></div>`; return; }
+  const f=GEO.f[mapSel], comp=mapComp(), it=forumOf(f.b,comp);
+  el.innerHTML=`<div class="selbox"><div class="n">${esc(f.n)}</div><div class="c">${esc(lab(comp))}</div><div class="v">${it?it.l.map(esc).join(" ou "):"Sem dados na planilha"}</div>${it&&it.p?`<div class="c">Bairro dividido — depende da rua</div>`:""}
+    ${f.b?`<div style="margin-top:8px"><button class="linkbtn" data-bairro="${esc(f.b.n)}">Ver todas as competências →</button></div>`:""}</div>`;
+}
+window.__geoDbg=()=>GEO;
+function renderMap(){
+  $("#mapwrap").hidden=false; $("#list-b").innerHTML=""; $("#st-b").textContent="";
+  if(!GEO){ $("#mapmsg").hidden=false; loadGeo(); } else drawMap();
+}
+(function(){
+  const svg=$("#mapsvg"), box=$("#mapbox"), tip=$("#maptip");
+  const pt=e=>{ const r=svg.getBoundingClientRect(), vb=svg.viewBox.baseVal; const k=Math.min(r.width/vb.width,r.height/vb.height); const ox=(r.width-vb.width*k)/2, oy=(r.height-vb.height*k)/2; return [(e.clientX-r.left-ox)/k,(e.clientY-r.top-oy)/k]; };
+  const zoomAt=(f,cx,cy)=>{ const s=Math.min(12,Math.max(1,mapT.s*f)); const r=s/mapT.s; mapT.x=cx-(cx-mapT.x)*r; mapT.y=cy-(cy-mapT.y)*r; mapT.s=s; if(s===1){mapT.x=0;mapT.y=0;} applyMapT(); };
+  svg.addEventListener("wheel",e=>{ if(!GEO) return; e.preventDefault(); const [x,y]=pt(e); zoomAt(e.deltaY<0?1.25:0.8,x,y); },{passive:false});
+  let drag=null, moved=false;
+  svg.addEventListener("pointerdown",e=>{ drag={x:e.clientX,y:e.clientY,tx:mapT.x,ty:mapT.y}; moved=false; });
+  window.addEventListener("pointermove",e=>{
+    if(drag){ const r=svg.getBoundingClientRect(), vb=svg.viewBox.baseVal, k=Math.min(r.width/vb.width,r.height/vb.height);
+      const dx=(e.clientX-drag.x)/k, dy=(e.clientY-drag.y)/k; if(Math.abs(dx)+Math.abs(dy)>3){ moved=true; svg.classList.add("drag"); }
+      if(moved){ mapT.x=drag.tx+dx; mapT.y=drag.ty+dy; applyMapT(); tip.hidden=true; return; } }
+    const p=e.target.closest&&e.target.closest("#mapg path");
+    if(p&&GEO){ const f=GEO.f[+p.dataset.fi], it=forumOf(f.b,mapComp()); const br=box.getBoundingClientRect();
+      tip.innerHTML=`<b>${esc(f.n)}</b>${it?esc(it.l.join(" ou ")):"Sem dados na planilha"}`; tip.style.left=(e.clientX-br.left)+"px"; tip.style.top=(e.clientY-br.top)+"px"; tip.hidden=false; }
+    else tip.hidden=true;
+  });
+  window.addEventListener("pointerup",e=>{
+    if(drag&&!moved){ const p=e.target.closest&&e.target.closest("#mapg path"); if(p){ mapSel=+p.dataset.fi; drawMap(); } }
+    drag=null; svg.classList.remove("drag");
+  });
+  box.addEventListener("pointerleave",()=>tip.hidden=true);
+})();
 
 function renderFilters(){
   const counts={}; ACOES.forEach(a=>counts[a.comp]=(counts[a.comp]||0)+1);
@@ -650,12 +823,15 @@ document.addEventListener("keydown",e=>{
   if(e.key==="Escape"&&state.view!=="ajuda"&&state.view!=="sugestao"){state.q[state.view]="";state.bairro=null;$("#q").value="";render();$("#q").focus()}
 });
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-copy],[data-view],[data-comp],[data-sis],[data-goassunto],[data-bairro],[data-bcomp],[data-bclear],[data-gobairro],[data-ctx],[data-ctxoff],[data-suggest],[data-fbtype],[data-fbcopy],#more,#moreAs");
+  const t=e.target.closest("[data-copy],[data-view],[data-comp],[data-sis],[data-goassunto],[data-bairro],[data-bcomp],[data-bclear],[data-gobairro],[data-bmode],[data-mhl],[data-zoom],[data-ctx],[data-ctxoff],[data-suggest],[data-fbtype],[data-fbcopy],#more,#moreAs");
   if(!t) return;
   if(t.dataset.copy!==undefined){copy(t.dataset.copy);return}
   if(t.dataset.view){if(t.dataset.view==="assuntos"&&t.classList.contains("tab"))state.ctx=null;setView(t.dataset.view);return}
-  if(t.dataset.bairro!==undefined){state.bairro=t.dataset.bairro;state.q.bairros=t.dataset.bairro;$("#q").value=t.dataset.bairro;$("#clear").style.display="block";renderBairros();window.scrollTo({top:0});return}
-  if(t.dataset.bcomp!==undefined){state.bcomp=state.bcomp===t.dataset.bcomp?"":t.dataset.bcomp;renderBairros();return}
+  if(t.dataset.bmode!==undefined){state.bmode=t.dataset.bmode;try{history.replaceState(null,"","#"+(state.bmode==="mapa"?"mapa":"bairros"))}catch(e){};renderBairros();return}
+  if(t.dataset.mhl!==undefined){mapHL=mapHL===t.dataset.mhl?"":t.dataset.mhl;drawMap();return}
+  if(t.dataset.zoom!==undefined){const z=+t.dataset.zoom;if(!z){mapT={s:1,x:0,y:0};applyMapT();}else{const vb=$("#mapsvg").viewBox.baseVal;const cx=vb.width/2,cy=vb.height/2,f=z>0?1.5:1/1.5;const s=Math.min(12,Math.max(1,mapT.s*f)),r=s/mapT.s;mapT.x=cx-(cx-mapT.x)*r;mapT.y=cy-(cy-mapT.y)*r;mapT.s=s;if(s===1){mapT.x=0;mapT.y=0;}applyMapT();}return}
+  if(t.dataset.bairro!==undefined){state.bmode="lista";state.bairro=t.dataset.bairro;state.q.bairros=t.dataset.bairro;$("#q").value=t.dataset.bairro;$("#clear").style.display="block";renderBairros();window.scrollTo({top:0});return}
+  if(t.dataset.bcomp!==undefined){state.bcomp=state.bcomp===t.dataset.bcomp?"":t.dataset.bcomp;mapHL="";renderBairros();return}
   if(t.dataset.suggest!==undefined){$("#fbitem").value=t.dataset.suggest;setFbType("Correção");$("#fbres").innerHTML="";setView("sugestao");window.scrollTo({top:0});return}
   if(t.dataset.fbtype!==undefined){setFbType(t.dataset.fbtype);return}
   if(t.dataset.fbcopy!==undefined){copy(fbText());return}
@@ -716,7 +892,7 @@ load().then(d=>{
   prep(d);
   $("#fontes").innerHTML=`<b>Fontes dos dados</b><br>${esc(FONTES)}<br><br>Bairros: planilha “Competências por bairro” do setor (nov/2026). Algumas linhas com erro de digitação foram corrigidas; bairros com competência faltando aparecem como “Não informado na planilha”.`;
   $("#foot").textContent=`${ACOES.length} ações/classes · ${ASS.length.toLocaleString("pt-BR")} assuntos${BD?` · ${BD.bairros.length} bairros`:""}. Ferramenta de apoio, não é um site oficial do TJRJ. Em caso de dúvida, conferir sempre no sistema.`;
-  const h=location.hash.slice(1); if(VIEWS.includes(h)) state.view=h;
+  const h=location.hash.slice(1); if(VIEWS.includes(h)) state.view=h; if(h==="mapa"){state.view="bairros";state.bmode="mapa";}
   render(); if(state.view!=="ajuda") $("#q").focus();
 }).catch(err=>{ $("#list-acoes").innerHTML=`<div class="empty"><b>Não consegui carregar os dados.</b>${esc(err)}</div>` });
 })();
