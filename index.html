@@ -155,9 +155,21 @@ details.grp>summary .rm{margin-left:auto;color:var(--muted);font-weight:400;font
 .seg{display:inline-flex;background:#e6e9ee;border-radius:10px;padding:3px;margin-top:14px;gap:3px}
 .seg button{border:0;background:none;padding:7px 14px;border-radius:8px;font-weight:600;color:#475569;font-size:14px}
 .seg button[aria-pressed=true]{background:#fff;color:var(--brand);box-shadow:0 1px 2px rgba(0,0,0,.08)}
-.maplay{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px;margin-top:10px}
+.maplay{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr);gap:12px;margin-top:8px;align-items:start}
+.crumb{margin-top:14px;font-size:15px;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.crumb .linkbtn{font-size:15px}
+.crumb .hint2{margin-left:auto;color:var(--muted);font-size:13px}
+.lbls text{pointer-events:none;text-anchor:middle;dominant-baseline:middle;font-weight:700;fill:#1b2430;paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round}
+.lbls text.rl{font-size:1.25em}
+.lbls text.bl{font-size:.8em;font-weight:600}
+.lbls text.bl.s{font-weight:800}
+.mpcard .bhead h2{font-size:20px}
+.mpcard .tiles,.mpcard .always{max-width:none}
+.mpcard .tile{padding:8px 11px}
+.mpcard .tile .tl{font-size:16px}
+.legend h4 .sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px}
 .mapbox{position:relative;background:#eaf1f8;border:1px solid var(--line);border-radius:12px;overflow:hidden;touch-action:none;min-height:340px}
-#mapsvg{width:100%;height:auto;display:block;cursor:grab}
+#mapsvg{width:100%;height:auto;display:block;cursor:pointer}
 #mapsvg.drag{cursor:grabbing}
 #mapg path{stroke:#fff;stroke-width:.7;vector-effect:non-scaling-stroke;transition:opacity .15s}
 #mapg path.nodata{fill:#d5dae1}
@@ -253,6 +265,7 @@ mark{background:#ffe9a8;color:inherit;border-radius:3px;padding:0 1px}
     <div class="seg" id="bmode"><button type="button" data-bmode="lista" aria-pressed="true">☰ Lista de bairros</button><button type="button" data-bmode="mapa" aria-pressed="false">🗺 Mapa das regionais</button></div>
     <div class="filters" id="bcomps"></div>
     <div id="mapwrap" hidden>
+      <div class="crumb" id="mapcrumb"></div>
       <div class="maplay">
         <div class="mapbox" id="mapbox">
           <div class="mapctl"><button type="button" data-zoom="1" title="Aproximar">+</button><button type="button" data-zoom="-1" title="Afastar">−</button><button type="button" data-zoom="0" title="Ver a cidade toda">⟲</button></div>
@@ -260,12 +273,9 @@ mark{background:#ffe9a8;color:inherit;border-radius:3px;padding:0 1px}
           <div class="maptip" id="maptip" hidden></div>
           <div class="mapmsg" id="mapmsg">Carregando o mapa…</div>
         </div>
-        <aside class="mappanel">
-          <div id="mapsel"></div>
-          <div class="legend" id="maplegend"></div>
-        </aside>
+        <aside class="mappanel" id="mappanel"></aside>
       </div>
-      <div class="small" style="margin-top:8px">Limites dos bairros: Prefeitura do Rio (data.rio). Passe o mouse ou toque num bairro para ver; clique numa regional na legenda para destacar os bairros dela. Use + / − ou a rodinha do mouse para dar zoom e arraste para mover.</div>
+      <div class="small" style="margin-top:8px">Limites dos bairros: Prefeitura do Rio (data.rio). Clique numa regional para aproximar e ver os bairros dela; clique num bairro para ver todas as competências. Use + / − ou a rodinha do mouse para dar zoom e arraste para mover.</div>
     </div>
     <div class="status" id="st-b"></div>
     <div id="list-b"></div>
@@ -582,6 +592,7 @@ function renderAss(){
 /* ---------- bairros ---------- */
 const lab=c=>BD.labels[c];
 function bcompChips(){
+  $("#bcomps").hidden=state.bmode==="mapa";
   const regional=BD.order.filter(c=>!BD.always.includes(c));
   $("#bcomps").innerHTML=`<button class="chip" data-bcomp="" aria-pressed="${!state.bcomp}">${state.bmode==="mapa"?"Regional (Cível)":"Todas as competências"}</button>`+
     regional.filter(c=>!(state.bmode==="mapa"&&c==="CÍVEL")).map(c=>`<button class="chip" data-bcomp="${esc(c)}" aria-pressed="${state.bcomp===c}">${esc(lab(c))}</button>`).join("");
@@ -648,9 +659,9 @@ function renderBairros(){
 /* ---------- mapa das regionais ---------- */
 const PAL=["#4E79A7","#F28E2B","#59A14F","#E15759","#76B7B2","#EDC948","#B07AA1","#FF9DA7","#9C755F","#17BECF","#BCBD22","#8C564B","#1F77B4","#D62728","#9467BD","#2CA02C","#E377C2","#AEC7E8","#FFBB78","#98DF8A","#C5B0D5","#C49C94"];
 const GEO_URLS=["Limite_de_Bairros.geojson","https://raw.githubusercontent.com/DATAUNIRIO/Mapas_e_Shapesfiles/master/rio/Limite_de_Bairros.geojson"];
-const GEO_KEY="distint_geo_v1";
-const ALIAS={"cavalcanti":"cavalcante","santa teresa":"santa tereza","sampaio":"sampaio correia","jardim sulacap":"sulacap","senador vasconcelos":"senador augusto vasconcelos","osvaldo cruz":"oswaldo cruz","praia da bandeira":"praia da bandeira (?)","bairro imperial de sao cristovao":"sao cristovao","imperial de sao cristovao":"sao cristovao","gardenia azul":"gardenia azul"};
-let GEO=null, geoLoading=false, mapT={s:1,x:0,y:0}, mapHL="", mapSel=null;
+const GEO_KEY="distint_geo_v2", MAPCOMP="CÍVEL";
+const ALIAS={"cavalcanti":"cavalcante","santa teresa":"santa tereza","sampaio":"sampaio correia","jardim sulacap":"sulacap","senador vasconcelos":"senador augusto vasconcelos","osvaldo cruz":"oswaldo cruz","praia da bandeira":"praia da bandeira (?)","bairro imperial de sao cristovao":"sao cristovao","imperial de sao cristovao":"sao cristovao"};
+let GEO=null, geoLoading=false, mapT={s:1,x:0,y:0}, mapReg="", mapSel=null, mapCol=null;
 function matchBairro(nome){
   if(!BD) return null;
   let k=norm(nome).replace(/\s+/g," ").trim();
@@ -674,11 +685,12 @@ function processGeo(g){
     const p=f.properties||{}; feats.push({n:String(p.nome||p.NOME||p.bairro||p.BAIRRO||p.name||"").trim(),rings});
   }
   const kx=Math.cos((y0+y1)/2*Math.PI/180), W=1000, sc=W/((x1-x0)*kx), H=Math.ceil((y1-y0)*sc);
-  const out=feats.map(f=>{ let big=null,ba=-1;
+  const out=feats.map(f=>{ let big=null,ba=-1,fb=[1e9,1e9,-1e9,-1e9];
     const d=f.rings.map(r=>{ let bx0=1e9,bx1=-1e9,by0=1e9,by1=-1e9;
       const s=r.map(([x,y],i)=>{ const px=((x-x0)*kx*sc), py=((y1-y)*sc); if(px<bx0)bx0=px; if(px>bx1)bx1=px; if(py<by0)by0=py; if(py>by1)by1=py; return (i?"L":"M")+px.toFixed(1)+","+py.toFixed(1); }).join("")+"Z";
-      const a=(bx1-bx0)*(by1-by0); if(a>ba){ba=a;big=[(bx0+bx1)/2,(by0+by1)/2];} return s; }).join("");
-    return {n:f.n,d,c:big}; });
+      const a=(bx1-bx0)*(by1-by0); if(a>ba){ba=a;big=[+((bx0+bx1)/2).toFixed(1),+((by0+by1)/2).toFixed(1)];}
+      fb=[Math.min(fb[0],bx0),Math.min(fb[1],by0),Math.max(fb[2],bx1),Math.max(fb[3],by1)]; return s; }).join("");
+    return {n:f.n,d,c:big,bb:fb.map(v=>+v.toFixed(1)),a:+ba.toFixed(0)}; });
   return {W,H,f:out};
 }
 function loadGeo(){
@@ -694,51 +706,81 @@ function loadGeo(){
   };
   tryUrl(0);
 }
-function mapComp(){ return state.bcomp||"CÍVEL"; }
 function forumOf(b,comp){ const it=b&&b.i.find(x=>x.c===comp); return (!it||it.miss)?null:it; }
-function colorMap(){
-  const comp=mapComp(), cnt=new Map();
-  for(const f of GEO.f){ const b=f.b; const it=forumOf(b,comp); if(it){ const k=it.l[0]; cnt.set(k,(cnt.get(k)||0)+1);} }
+function regOf(f){ const it=forumOf(f.b,MAPCOMP); return it?it.l[0]:""; }
+function prepMap(){
+  GEO.f.forEach(f=>{ if(f.b===undefined) f.b=matchBairro(f.n); f.r=regOf(f); });
+  const cnt=new Map(); GEO.f.forEach(f=>{ if(f.r) cnt.set(f.r,(cnt.get(f.r)||0)+1); });
   const keys=[...cnt.keys()].sort((a,b)=>(b==="Capital")-(a==="Capital")||cnt.get(b)-cnt.get(a));
-  const col=new Map(keys.map((k,i)=>[k,PAL[i%PAL.length]])); return {comp,cnt,keys,col};
+  mapCol={cnt,keys,col:new Map(keys.map((k,i)=>[k,PAL[i%PAL.length]]))};
 }
-function applyMapT(){ $("#mapg").setAttribute("transform",`translate(${mapT.x} ${mapT.y}) scale(${mapT.s})`); }
+function regBox(k){ let b=[1e9,1e9,-1e9,-1e9]; GEO.f.forEach(f=>{ if(f.r===k){ b=[Math.min(b[0],f.bb[0]),Math.min(b[1],f.bb[1]),Math.max(b[2],f.bb[2]),Math.max(b[3],f.bb[3])]; } }); return b; }
+function regCenter(k){ let sx=0,sy=0,sw=0; GEO.f.forEach(f=>{ if(f.r===k&&f.c){ const w=Math.sqrt(f.a||1); sx+=f.c[0]*w; sy+=f.c[1]*w; sw+=w; } }); return sw?[sx/sw,sy/sw]:null; }
+function applyMapT(){ $("#mapg").setAttribute("transform",`translate(${mapT.x} ${mapT.y}) scale(${mapT.s})`); const fs=$("#maplabels"); if(fs) fs.setAttribute("font-size",(13/mapT.s).toFixed(2)); }
+let anim=null;
+function animateTo(T){ const from={...mapT}, t0=performance.now(), D=380; cancelAnimationFrame(anim);
+  const step=now=>{ const k=Math.min(1,(now-t0)/D), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    mapT={s:from.s+(T.s-from.s)*e,x:from.x+(T.x-from.x)*e,y:from.y+(T.y-from.y)*e}; applyMapT(); if(k<1) anim=requestAnimationFrame(step); else drawLabels(); };
+  anim=requestAnimationFrame(step); }
+function fitBox(b){ const W=GEO.W,H=GEO.H,pad=.08; const bw=Math.max(b[2]-b[0],20), bh=Math.max(b[3]-b[1],20);
+  const s=Math.max(1,Math.min(12,Math.min(W/(bw*(1+2*pad)),H/(bh*(1+2*pad))))); return {s,x:W/2-s*(b[0]+b[2])/2,y:H/2-s*(b[1]+b[3])/2}; }
+function goReg(k){ mapReg=k; mapSel=null; drawMap(); animateTo(k?fitBox(regBox(k)):{s:1,x:0,y:0}); }
+function drawLabels(){
+  const g=$("#maplabels"); if(!g||!GEO) return;
+  let h="";
+  if(!mapReg){ for(const k of mapCol.keys){ const c=regCenter(k); if(c) h+=`<text x="${c[0].toFixed(1)}" y="${c[1].toFixed(1)}" class="rl">${esc(k)}</text>`; } }
+  else { GEO.f.forEach((f,i)=>{ if(f.r===mapReg&&f.c) h+=`<text x="${f.c[0]}" y="${f.c[1]}" class="bl${mapSel===i?" s":""}">${esc(f.n)}</text>`; }); }
+  g.innerHTML=h; g.setAttribute("font-size",(13/mapT.s).toFixed(2));
+}
 function drawMap(){
   if(!GEO||!BD) return;
+  if(!mapCol) prepMap();
   $("#mapsvg").setAttribute("viewBox",`0 0 ${GEO.W} ${GEO.H}`);
-  GEO.f.forEach(f=>{ if(f.b===undefined) f.b=matchBairro(f.n); });
-  const {comp,cnt,keys,col}=colorMap();
   const q=tokens(state.q.bairros);
   const g=$("#mapg");
-  g.innerHTML=GEO.f.map((f,i)=>{ const it=forumOf(f.b,comp); const k=it?it.l[0]:"";
-    const on=(mapHL&&k===mapHL)||(q.length&&q.every(t=>norm(f.n).includes(t)))||(mapSel===i);
-    return `<path data-fi="${i}" d="${f.d}"${it?` fill="${col.get(k)}"`:""} class="${it?"":"nodata"}${on?" on":""}${mapSel===i?" sel":""}"/>`; }).join("");
-  g.classList.toggle("fade",!!(mapHL||q.length));
-  applyMapT();
+  g.innerHTML=GEO.f.map((f,i)=>{ const col=f.r?mapCol.col.get(f.r):"";
+    const on=mapReg?f.r===mapReg:(q.length&&q.every(t=>norm(f.n).includes(t)));
+    return `<path data-fi="${i}" d="${f.d}"${col?` fill="${col}"`:""} class="${col?"":"nodata"}${on?" on":""}${mapSel===i?" sel":""}"/>`; }).join("")+`<g id="maplabels" class="lbls"></g>`;
+  g.classList.toggle("fade",!!(mapReg||q.length));
+  applyMapT(); drawLabels();
   $("#mapmsg").hidden=true; $("#mapbox").style.minHeight="0";
-  // legenda
-  let h=`<h4>${esc(lab(comp))} — fóruns</h4>`;
-  for(const k of keys){
-    h+=`<button class="lg" data-mhl="${esc(k)}" aria-pressed="${mapHL===k}"><span class="sw" style="background:${col.get(k)}"></span>${esc(k)}<span class="ct">${cnt.get(k)}</span></button>`;
-    if(mapHL===k){ const bs=GEO.f.filter(f=>{const it=forumOf(f.b,comp);return it&&it.l[0]===k}).map(f=>f.b.n).sort((a,b)=>a.localeCompare(b,"pt"));
-      h+=`<div class="lgl">${[...new Set(bs)].map(n=>`<button class="bchip" data-bairro="${esc(n)}">${esc(n)}</button>`).join("")}</div>`; }
-  }
-  const nod=GEO.f.filter(f=>!forumOf(f.b,comp)).length;
-  if(nod) h+=`<div class="lg" style="cursor:default"><span class="sw" style="background:#d5dae1"></span>Sem dados na planilha<span class="ct">${nod}</span></div>`;
-  $("#maplegend").innerHTML=h;
-  renderMapSel();
+  // trilha
+  const crumbs=[`<button class="linkbtn" data-mreg="">Todas as regionais</button>`];
+  if(mapReg) crumbs.push(mapSel!=null?`<button class="linkbtn" data-mreg="${esc(mapReg)}">${esc(mapReg)}</button>`:`<b>${esc(mapReg)}</b>`);
+  if(mapSel!=null) crumbs.push(`<b>${esc(GEO.f[mapSel].n)}</b>`);
+  $("#mapcrumb").innerHTML=crumbs.join(" › ")+`<span class="hint2">${!mapReg?"Clique numa regional no mapa ou na lista.":mapSel==null?"Agora clique num bairro.":"Clique em outro bairro para trocar."}</span>`;
+  renderMapPanel();
 }
-function renderMapSel(){
-  const el=$("#mapsel");
-  if(mapSel==null||!GEO){ el.innerHTML=`<div class="selbox"><div class="c">Clique num bairro do mapa para ver o fórum.</div></div>`; return; }
-  const f=GEO.f[mapSel], comp=mapComp(), it=forumOf(f.b,comp);
-  el.innerHTML=`<div class="selbox"><div class="n">${esc(f.n)}</div><div class="c">${esc(lab(comp))}</div><div class="v">${it?it.l.map(esc).join(" ou "):"Sem dados na planilha"}</div>${it&&it.p?`<div class="c">Bairro dividido — depende da rua</div>`:""}
-    ${f.b?`<div style="margin-top:8px"><button class="linkbtn" data-bairro="${esc(f.b.n)}">Ver todas as competências →</button></div>`:""}</div>`;
+function renderMapPanel(){
+  const el=$("#mappanel");
+  if(mapSel!=null){
+    const f=GEO.f[mapSel];
+    el.innerHTML=f.b?`<div class="mpcard">${bairroCard(f.b).replace(/<button class="linkbtn" data-bclear="1">.*?<\/button>/,"")}</div>`
+      :`<div class="selbox"><div class="n">${esc(f.n)}</div><div class="c">Este bairro não está na planilha de competências.</div></div>`;
+    return;
+  }
+  if(mapReg){
+    const bs=GEO.f.map((f,i)=>[f,i]).filter(([f])=>f.r===mapReg).sort((a,b)=>a[0].n.localeCompare(b[0].n,"pt"));
+    el.innerHTML=`<div class="legend"><h4><span class="sw" style="background:${mapCol.col.get(mapReg)}"></span> Regional ${esc(mapReg)} · ${bs.length} bairros</h4><div class="bgrid" style="padding:0 4px 4px">${bs.map(([f,i])=>`<button class="bchip" data-mfi="${i}">${esc(f.n)}</button>`).join("")}</div></div>`;
+    return;
+  }
+  let h=`<div class="legend"><h4>Regionais (fórum do Cível)</h4>`;
+  for(const k of mapCol.keys) h+=`<button class="lg" data-mreg="${esc(k)}"><span class="sw" style="background:${mapCol.col.get(k)}"></span>${esc(k)}<span class="ct">${mapCol.cnt.get(k)} bairros</span></button>`;
+  const nod=GEO.f.filter(f=>!f.r).length;
+  if(nod) h+=`<div class="lg" style="cursor:default"><span class="sw" style="background:#d5dae1"></span>Sem dados na planilha<span class="ct">${nod}</span></div>`;
+  el.innerHTML=h+`</div>`;
 }
 window.__geoDbg=()=>GEO;
 function renderMap(){
   $("#mapwrap").hidden=false; $("#list-b").innerHTML=""; $("#st-b").textContent="";
   if(!GEO){ $("#mapmsg").hidden=false; loadGeo(); } else drawMap();
+}
+function mapClick(i){
+  const f=GEO.f[i];
+  if(!mapReg){ if(f.r) goReg(f.r); return; }
+  if(f.r!==mapReg){ if(f.r) goReg(f.r); return; }
+  mapSel=i; drawMap();
+  if(window.innerWidth<=760) $("#mappanel").scrollIntoView({behavior:"smooth",block:"start"});
 }
 (function(){
   const svg=$("#mapsvg"), box=$("#mapbox"), tip=$("#maptip");
@@ -749,15 +791,17 @@ function renderMap(){
   svg.addEventListener("pointerdown",e=>{ drag={x:e.clientX,y:e.clientY,tx:mapT.x,ty:mapT.y}; moved=false; });
   window.addEventListener("pointermove",e=>{
     if(drag){ const r=svg.getBoundingClientRect(), vb=svg.viewBox.baseVal, k=Math.min(r.width/vb.width,r.height/vb.height);
-      const dx=(e.clientX-drag.x)/k, dy=(e.clientY-drag.y)/k; if(Math.abs(dx)+Math.abs(dy)>3){ moved=true; svg.classList.add("drag"); }
+      const dx=(e.clientX-drag.x)/k, dy=(e.clientY-drag.y)/k; if(Math.abs(dx)+Math.abs(dy)>4){ moved=true; svg.classList.add("drag"); }
       if(moved){ mapT.x=drag.tx+dx; mapT.y=drag.ty+dy; applyMapT(); tip.hidden=true; return; } }
     const p=e.target.closest&&e.target.closest("#mapg path");
-    if(p&&GEO){ const f=GEO.f[+p.dataset.fi], it=forumOf(f.b,mapComp()); const br=box.getBoundingClientRect();
-      tip.innerHTML=`<b>${esc(f.n)}</b>${it?esc(it.l.join(" ou ")):"Sem dados na planilha"}`; tip.style.left=(e.clientX-br.left)+"px"; tip.style.top=(e.clientY-br.top)+"px"; tip.hidden=false; }
+    if(p&&GEO){ const f=GEO.f[+p.dataset.fi]; const br=box.getBoundingClientRect();
+      tip.innerHTML=!mapReg?(f.r?`<b>Regional ${esc(f.r)}</b>${esc(f.n)} · clique para abrir`:`<b>${esc(f.n)}</b>Sem dados na planilha`)
+        :(f.r===mapReg?`<b>${esc(f.n)}</b>clique para ver as competências`:(f.r?`<b>Regional ${esc(f.r)}</b>clique para trocar de regional`:`<b>${esc(f.n)}</b>Sem dados na planilha`));
+      tip.style.left=(e.clientX-br.left)+"px"; tip.style.top=(e.clientY-br.top)+"px"; tip.hidden=false; }
     else tip.hidden=true;
   });
   window.addEventListener("pointerup",e=>{
-    if(drag&&!moved){ const p=e.target.closest&&e.target.closest("#mapg path"); if(p){ mapSel=+p.dataset.fi; drawMap(); } }
+    if(drag&&!moved){ const p=e.target.closest&&e.target.closest("#mapg path"); if(p) mapClick(+p.dataset.fi); }
     drag=null; svg.classList.remove("drag");
   });
   box.addEventListener("pointerleave",()=>tip.hidden=true);
@@ -823,15 +867,16 @@ document.addEventListener("keydown",e=>{
   if(e.key==="Escape"&&state.view!=="ajuda"&&state.view!=="sugestao"){state.q[state.view]="";state.bairro=null;$("#q").value="";render();$("#q").focus()}
 });
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-copy],[data-view],[data-comp],[data-sis],[data-goassunto],[data-bairro],[data-bcomp],[data-bclear],[data-gobairro],[data-bmode],[data-mhl],[data-zoom],[data-ctx],[data-ctxoff],[data-suggest],[data-fbtype],[data-fbcopy],#more,#moreAs");
+  const t=e.target.closest("[data-copy],[data-view],[data-comp],[data-sis],[data-goassunto],[data-bairro],[data-bcomp],[data-bclear],[data-gobairro],[data-bmode],[data-mreg],[data-mfi],[data-zoom],[data-ctx],[data-ctxoff],[data-suggest],[data-fbtype],[data-fbcopy],#more,#moreAs");
   if(!t) return;
   if(t.dataset.copy!==undefined){copy(t.dataset.copy);return}
   if(t.dataset.view){if(t.dataset.view==="assuntos"&&t.classList.contains("tab"))state.ctx=null;setView(t.dataset.view);return}
   if(t.dataset.bmode!==undefined){state.bmode=t.dataset.bmode;try{history.replaceState(null,"","#"+(state.bmode==="mapa"?"mapa":"bairros"))}catch(e){};renderBairros();return}
-  if(t.dataset.mhl!==undefined){mapHL=mapHL===t.dataset.mhl?"":t.dataset.mhl;drawMap();return}
-  if(t.dataset.zoom!==undefined){const z=+t.dataset.zoom;if(!z){mapT={s:1,x:0,y:0};applyMapT();}else{const vb=$("#mapsvg").viewBox.baseVal;const cx=vb.width/2,cy=vb.height/2,f=z>0?1.5:1/1.5;const s=Math.min(12,Math.max(1,mapT.s*f)),r=s/mapT.s;mapT.x=cx-(cx-mapT.x)*r;mapT.y=cy-(cy-mapT.y)*r;mapT.s=s;if(s===1){mapT.x=0;mapT.y=0;}applyMapT();}return}
+  if(t.dataset.mreg!==undefined){goReg(t.dataset.mreg);return}
+  if(t.dataset.mfi!==undefined){mapClick(+t.dataset.mfi);return}
+  if(t.dataset.zoom!==undefined){const z=+t.dataset.zoom;if(!z){goReg("");}else{const vb=$("#mapsvg").viewBox.baseVal;const cx=vb.width/2,cy=vb.height/2,f=z>0?1.5:1/1.5;const s=Math.min(12,Math.max(1,mapT.s*f)),r=s/mapT.s;mapT.x=cx-(cx-mapT.x)*r;mapT.y=cy-(cy-mapT.y)*r;mapT.s=s;if(s===1){mapT.x=0;mapT.y=0;}applyMapT();}return}
   if(t.dataset.bairro!==undefined){state.bmode="lista";state.bairro=t.dataset.bairro;state.q.bairros=t.dataset.bairro;$("#q").value=t.dataset.bairro;$("#clear").style.display="block";renderBairros();window.scrollTo({top:0});return}
-  if(t.dataset.bcomp!==undefined){state.bcomp=state.bcomp===t.dataset.bcomp?"":t.dataset.bcomp;mapHL="";renderBairros();return}
+  if(t.dataset.bcomp!==undefined){state.bcomp=state.bcomp===t.dataset.bcomp?"":t.dataset.bcomp;renderBairros();return}
   if(t.dataset.suggest!==undefined){$("#fbitem").value=t.dataset.suggest;setFbType("Correção");$("#fbres").innerHTML="";setView("sugestao");window.scrollTo({top:0});return}
   if(t.dataset.fbtype!==undefined){setFbType(t.dataset.fbtype);return}
   if(t.dataset.fbcopy!==undefined){copy(fbText());return}
